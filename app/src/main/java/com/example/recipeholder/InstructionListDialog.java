@@ -1,6 +1,5 @@
 package com.example.recipeholder;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,6 +22,8 @@ public class InstructionListDialog extends AppCompatDialogFragment {
 
     private static final String TAG = "InstructionListDialog";
 
+    public static final String INSTRUCTION_TAG = "instruction_key";
+    public static final String INSTRUCTION_REQUEST_KEY = "instruction_request_key";
 
     //Interface to be used for sending the instruction input from mInstructionInput over to
     //the TextView in InstructionListDialog
@@ -50,11 +52,16 @@ public class InstructionListDialog extends AppCompatDialogFragment {
                 Log.d(TAG, "onClick: capturing input");
                 String instructionInput = mInstructionInput.getText().toString();
 
-                if (!instructionInput.equals("")){
+                Bundle bundle = new Bundle();
+                bundle.putString(INSTRUCTION_TAG, instructionInput);
+                getParentFragmentManager().setFragmentResult(INSTRUCTION_REQUEST_KEY, bundle);
 
-                    mOnInstructionInputSelected.sendInstructionInput(instructionInput);
+                try {
+                    getDialog().dismiss();
+                } catch (NullPointerException e) {
+                    Toast.makeText(getActivity(), "No dialog detected", Toast.LENGTH_SHORT).show();
                 }
-                getDialog().dismiss();
+
             }
         });
 
@@ -72,14 +79,14 @@ public class InstructionListDialog extends AppCompatDialogFragment {
         return view;
     }
 
-    @Override
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
-        try {
-            mOnInstructionInputSelected = (OnInstructionInputSelected) getTargetFragment();
-
-        } catch (ClassCastException e) {
-            Log.e(TAG, "onAttach: ClassCastException:" + e.getMessage());
-        }
-    }
+//    @Override
+//    public void onAttach(@NonNull Context context) {
+//        super.onAttach(context);
+//        try {
+//            mOnInstructionInputSelected = (OnInstructionInputSelected) getTargetFragment();
+//
+//        } catch (ClassCastException e) {
+//            Log.e(TAG, "onAttach: ClassCastException:" + e.getMessage());
+//        }
+//    }
 }

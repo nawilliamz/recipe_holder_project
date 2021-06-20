@@ -20,18 +20,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Toolbar;
 
+import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentResultListener;
 
 import java.util.ArrayList;
 import java.util.UUID;
 
-public class RecipeFragmentNew extends Fragment implements IngredientListDialog.OnIngredientInputSelected,
-        InstructionListDialog.OnInstructionInputSelected{
+public class RecipeFragmentNew extends Fragment {
 
-
-    public static final String TAG = "RecipeFragmentNew";
-    public static final String DIALOG_INGREDIENTS = "DialogIngredients";
 
     private Recipe mRecipe;
     private Toolbar mToolBar;
@@ -51,6 +49,16 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
 
     public static final String ARG_RECIPE_ID = "crime_id";
 
+    public static final String TAG = "RecipeFragmentNew";
+    public static final String DIALOG_INGREDIENTS = "DialogIngredients";
+
+    public static final String DIALOG_FRAGMENT_KEY = "dialog_request_key";
+    public static final String INSTRUCTION_FRAGMENT_KEY = "instruction_request_key";
+
+    public static final String INGREDIENT_NAME_BUNDLE_TAG = "ingredient_name_key";
+    public static final String INGREDIENT_AMOUNT_BUNDLE_TAG = "ingredient_amount_key";
+    public static final String INSTRUCTION_BUNDLE_TAG = "instruction_key";
+
     private ArrayAdapter<Ingredient> mListAdapter;
     private ArrayAdapter<Instruction> mInstructionAdapter;
 
@@ -60,7 +68,6 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
 
         //Let's FragmentManager know this frag needs to receive menu callbacks
         setHasOptionsMenu(true);
-
 
 
 //        mRecipe = new Recipe();
@@ -124,8 +131,7 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
 //            mRecipe.getIngredients().add(ingredient);
 //            Log.d(TAG, "mRecipe.Ingredients has been read in from the DB");
 
-        } else if (numRows > 1)
-        {
+        } else if (numRows > 1) {
             for (Ingredient ingredient : list_read_in_from_DB) {
                 //Pick the elements of list_read_in_from_DB that match those associated with mRecipe
                 //by using the UUID field variable
@@ -150,11 +156,66 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
 //        }
 
 
-
         //not adding to mListAdapter so they will be viewed in the ListView
 //        mListAdapter.addAll(readIngredientsFromDatabase());
-    }
+//    }
 
+
+    //CODE BELOW IS TO RETRIEVE THE NAME AND AMOUNT OF NEW INGREDIENTS FROM THE INGREDIENT DIALOG
+    getParentFragmentManager().
+
+    setFragmentResultListener(DIALOG_FRAGMENT_KEY, this,new FragmentResultListener() {
+        @Override
+        public void onFragmentResult (@NonNull String requestKey, @NonNull Bundle resultBundle){
+            String resultName = resultBundle.getString(INGREDIENT_NAME_BUNDLE_TAG);
+            String resultAmount = resultBundle.getString(INGREDIENT_AMOUNT_BUNDLE_TAG);
+
+            Log.d(TAG, "found incoming ingredient input");
+
+            UUID ingredient_recipe_Id = (UUID) getArguments().getSerializable(ARG_RECIPE_ID);
+
+            if ((!resultName.equals("")) && (!resultAmount.equals(""))) {
+
+                //Capture a list ID for each ingredient that is the String concatenation of
+                //UUID, name,and amount
+
+                String ingredient_list_id = ingredient_recipe_Id.toString() + "" + resultName + "" + resultAmount;
+
+                Ingredient ingredient = new Ingredient(ingredient_recipe_Id, ingredient_list_id, resultName, resultAmount);
+
+                RecipeQueue.get(getActivity()).addIngredient(ingredient);
+
+                //If you switch to a cursor adaptor, you s/b able to be rid of this code below since
+                //you can read the ingredient table into the ListView directly from the DB
+
+//            mRecipe.getIngredients().add(ingredient);
+                mListAdapter.add(ingredient);
+            }
+        }
+    });
+
+
+    //CODE BELOW IS TO RETRIEVE THE NEW INSTRUCTIONS FROM THE INSTRUCTION DIALOG
+
+    getParentFragmentManager().
+
+    setFragmentResultListener(INSTRUCTION_FRAGMENT_KEY, this,new FragmentResultListener() {
+        @Override
+        public void onFragmentResult (@NonNull String requestKey, @NonNull Bundle resultBundle){
+
+            String resultInstruction = resultBundle.getString(INSTRUCTION_BUNDLE_TAG);
+
+            Log.d(TAG, "found incoming ingredient input");
+
+            if (!resultInstruction.equals("")) {
+
+                Instruction instruction = new Instruction(resultInstruction);
+                mInstructionAdapter.add(instruction);
+            }
+        }
+    });
+
+}
 
 
     @Override
@@ -172,9 +233,6 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
         //These two lines of code were moved from onCreate() method above
 //        UUID recipeId = (UUID) getArguments().getSerializable(ARG_RECIPE_ID);
 //        mRecipe = RecipeQueue.get(getActivity()).getRecipe(recipeId);
-
-
-
 
 
 
@@ -206,10 +264,10 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
             public void onClick(View v) {
                 Log.d(TAG, "onClick: opening ingredient dialog");
                 IngredientListDialog dialog = new IngredientListDialog();
-
-
-                dialog.setTargetFragment(RecipeFragmentNew.this, 1);
-                dialog.show(getFragmentManager(), "MyIngredientDialog");
+//                dialog.setTargetFragment(RecipeFragmentNew.this, 1);
+//                dialog.show(getFragmentManager(), "MyIngredientDialog");
+//
+                dialog.show(getParentFragmentManager(), "MyIngredientDialog");
             }
         });
 
@@ -316,16 +374,8 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
             public void onClick(View v) {
                 Log.d(TAG, "onClick: opening instruction dialog");
                 InstructionListDialog dialog = new InstructionListDialog();
-
-                //Instead of using setTargetFragmenet, you will need to use code to pass Fragment
-                //args from the DialogFragment to RecipeFragmentNew, retrieve those args as Strings,
-                //and then set those strings, use a request code to specify the fragment
-                dialog.setTargetFragment(RecipeFragmentNew.this, 2);
-
-                //dialog.show displays the Dialog, the tag is a unique tag name the system uses to
-                //save and restore the fragment state when necessary
-                //use getChildFragmentManager() instead to display the dialog
-                dialog.show(getFragmentManager(), "MyInstructionDialog");
+//                dialog.setTargetFragment(RecipeFragmentNew.this, 2);
+                dialog.show(getParentFragmentManager(), "MyInstructionDialog");
             }
         });
 
@@ -397,9 +447,9 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
 
 
 
-    @Override
-    public void sendIngredientInput(String ingredientInput, String ingredientAmount) {
-        Log.d(TAG, "sendInput: found incoming input");
+//    @Override
+//    public void sendIngredientInput(String ingredientInput, String ingredientAmount) {
+//        Log.d(TAG, "sendInput: found incoming input");
 
 //        Recipe recipe_temp = null;
 
@@ -407,16 +457,16 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
         // and stores in a variable
         //The intent here is to store the UUID for the ingredient to be the same as that of the
         //corresponding Recipe
-        UUID ingredient_recipe_Id = (UUID) getArguments().getSerializable(ARG_RECIPE_ID);
+//        UUID ingredient_recipe_Id = (UUID) getArguments().getSerializable(ARG_RECIPE_ID);
 
-        if ((!ingredientInput.equals("")) && (!ingredientAmount.equals(""))) {
+//        if ((!ingredientInput.equals("")) && (!ingredientAmount.equals(""))) {
 
             //Capture a list ID for each ingredient that is the String concatenation of
             //UUID, name,and amount
 
-            String ingredient_list_id = ingredient_recipe_Id.toString() + "" + ingredientInput + "" + ingredientAmount;
+//            String ingredient_list_id = ingredient_recipe_Id.toString() + "" + ingredientInput + "" + ingredientAmount;
 
-            Ingredient ingredient = new Ingredient(ingredient_recipe_Id, ingredient_list_id, ingredientInput, ingredientAmount);
+//            Ingredient ingredient = new Ingredient(ingredient_recipe_Id, ingredient_list_id, ingredientInput, ingredientAmount);
 
 
             //If you use listAdapter.add(ingredients), the ingredient fills the list window immediately
@@ -433,14 +483,14 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
 //            }
 
             //This code adds the new ingredient to the database
-            RecipeQueue.get(getActivity()).addIngredient(ingredient);
+//            RecipeQueue.get(getActivity()).addIngredient(ingredient);
 
 
             //If you switch to a cursor adaptor, you s/b able to be rid of this code below since
             //you can read the ingredient table into the ListView directly from the DB
 
 //            mRecipe.getIngredients().add(ingredient);
-            mListAdapter.add(ingredient);
+//            mListAdapter.add(ingredient);
 
 
             //Need to use the get() method in RecipeQueue to retrieve our Singleton, then
@@ -448,18 +498,18 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
             //variable above as your input
             //This will add a row for your ingredient into the IngredientTable and save its values
 
-        }
-    }
+//        }
+//    }
 
-    @Override
-    public void sendInstructionInput(String instructionInput) {
-        Log.d(TAG, "sendInput: found incoming input");
-
-        if((!instructionInput.equals(""))) {
-            Instruction instruction = new Instruction(instructionInput);
-            mInstructionAdapter.add(instruction);
-        }
-    }
+//    @Override
+//    public void sendInstructionInput(String instructionInput) {
+//        Log.d(TAG, "sendInput: found incoming input");
+//
+//        if((!instructionInput.equals(""))) {
+//            Instruction instruction = new Instruction(instructionInput);
+//            mInstructionAdapter.add(instruction);
+//        }
+//    }
 
 
 
@@ -474,31 +524,5 @@ public class RecipeFragmentNew extends Fragment implements IngredientListDialog.
 
     }
 
-    //MENU CODE: no longer using /unable to get menu working at fragment level
 
-//    @Override
-//    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-////        super.onCreateOptionsMenu(menu, inflater);
-//        inflater.inflate(R.menu.fragment_recipe, menu);
-//
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-//        switch (item.getItemId()) {
-//            case R.id.delete_recipe:
-//                //Deletes the recipe from the recipe table in DB
-//                RecipeQueue.get(getActivity()).deleteRecipe(mRecipe);
-//                //Removes recipe from our arraylist of recipes
-//                Recipe.list_of_recipes.remove(mRecipe);
-//                return true;
-//            default:
-//                return super.onOptionsItemSelected(item);
-//        }
-//
-//    }
-
-    //    public UUID getRecipeUUID() {
-//        return (UUID) getArguments().getSerializable(ARG_RECIPE_ID);
-//    }
 }

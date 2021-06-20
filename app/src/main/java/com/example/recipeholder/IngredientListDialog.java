@@ -17,6 +17,10 @@ public class IngredientListDialog extends AppCompatDialogFragment {
 
     private static final String TAG = "IngredientListDialog";
 
+    public static final String INGREDIENT_NAME_BUNDLE_TAG = "ingredient_name_key";
+    public static final String INGREDIENT_AMOUNT_BUNDLE_TAG = "ingredient_amount_key";
+    public static final String DIALOG_REQUEST_KEY = "dialog_request_key";
+
     private TextView mIngredientHeading;
     private EditText mIngredientInput;
     private EditText mAmountInput;
@@ -58,12 +62,11 @@ public class IngredientListDialog extends AppCompatDialogFragment {
                 String ingredientInput = mIngredientInput.getText().toString();
                 String amountInput = mAmountInput.getText().toString();
 
+                Bundle bundle = new Bundle();
+                bundle.putString(INGREDIENT_NAME_BUNDLE_TAG, ingredientInput);
+                bundle.putString(INGREDIENT_AMOUNT_BUNDLE_TAG, amountInput);
+                getParentFragmentManager().setFragmentResult(DIALOG_REQUEST_KEY, bundle);
 
-                if (!ingredientInput.equals("")&&!amountInput.equals("")){
-
-                    mOnIngredientInputSelected.sendIngredientInput(ingredientInput, amountInput);
-
-                }
                 getDialog().dismiss();
             }
 
